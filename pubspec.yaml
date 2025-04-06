@@ -38,6 +38,9 @@ dependencies:
   logger: ^2.0.2
 
   loading_animation_widget:
+  sqflite: ^2.0.0+4
+  path: ^1.8.0
+
 
   
 dev_dependencies:

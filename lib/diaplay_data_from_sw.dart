@@ -60,33 +60,20 @@ class SmartWatchDashboardState extends State<SmartWatchDashboard> {
   Widget build(BuildContext context) {
     // Wrap everything in a ListView for scrolling.
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "HEALTH SYNC",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            color: Color.from(alpha: 1, red: 0.627, green: 0.404, blue: 0.918),
-            fontSize: 15,
-          ),
-        ),
-        //backgroundColor: Colors.grey,
-        actions: [
-          Container(
-            margin: const EdgeInsets.all(15),
-            width: 15,
-            height: 15,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: serverComm.isConnected ? Colors.green : Colors.red,
-            ),
-          )
-        ],
-      ),
+      // appBar: AppBar(
+      //   title: const Text(
+      //     "HEALTH SYNC",
+      //     textAlign: TextAlign.center,
+      //     style: TextStyle(
+      //       fontWeight: FontWeight.w900,
+      //       color: Color.from(alpha: 1, red: 0.627, green: 0.404, blue: 0.918),
+      //       fontSize: 25,
+      //     ),
+      //   ),
+      // ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          const SizedBox(height: 16),
           Card(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -97,48 +84,32 @@ class SmartWatchDashboardState extends State<SmartWatchDashboard> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Server Status: ${serverComm.isConnected ? "Connected" : "Disconnected"}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Icon(Icons.watch_rounded),
+                      Text(
+                        ' ${serverComm.isConnected ? "Connected" : "Disconnected"}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          //color: serverComm.isConnected ? Colors.green : Colors.red,
+                          color: const Color(0xFF4b4453),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    margin: const EdgeInsets.all(15),
+                    width: 15,
+                    height: 15,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
                       color: serverComm.isConnected ? Colors.green : Colors.red,
                     ),
-                  ),
-                  Text(
-                    'Data Stream: ${isGeneratingData ? "Active" : "Inactive"}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isGeneratingData ? Colors.green : Colors.orange,
-                    ),
-                  ),
+                  )
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                onPressed: serverComm.isConnected ? toggleDataGeneration : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isGeneratingData ? Colors.red : Colors.green,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
-                child: Text(isGeneratingData
-                    ? 'Stop Data Stream'
-                    : 'Start Data Stream'),
-              ),
-              ElevatedButton(
-                onPressed: serverComm.isConnected ? getSingleReading : null,
-                style: ElevatedButton.styleFrom(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                ),
-                child: const Text('Get Single Reading'),
-              ),
-            ],
           ),
           const SizedBox(height: 24),
           if (healthData.isNotEmpty) ...[

@@ -12,8 +12,11 @@ class ServerCommunication {
   }
 
   void _connectToServer() {
+    // ignore: avoid_print
+    print('Connecting to socket...');
+
     // Replace with your Flask server address if needed
-    socket = socket_io.io('http://127.0.0.1:5000', <String, dynamic>{
+    socket = socket_io.io('http://192.168.1.42:5000', <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': true,
     });

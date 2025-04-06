@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'diaplay_data_from_sw.dart';
 import 'user_input_page.dart';
+import 'user_info_page.dart';
+import 'style.dart';
 
 var logger = Logger();
 
@@ -57,13 +59,12 @@ class _SplashScreenState extends State<SplashScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontWeight: FontWeight.w900,
-                color: Color.fromRGBO(160, 103, 234, 1),
-                fontSize: 30,
+                color: primaryPurple,
+                fontSize: 35,
               ),
             ),
             const SizedBox(height: 20),
             const CircularProgressIndicator(), // Loading indicator
-            //const DotsLoading(),
           ],
         ),
       ),
@@ -83,7 +84,8 @@ class _MainScreenState extends State<MainScreen> {
 
   static const List<Widget> _pages = [
     HomePage(),
-    SecondPage(),
+    UserFoodInputPage(),
+    UserInfoPage(),
   ];
 
   void _onItemTapped(int index) {
@@ -95,20 +97,62 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          "HEALTH SYNC",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            color: primaryPurple, // Using RGBA for clarity
+            fontSize: 25,
+          ),
+        ),
+        //centerTitle: true, // Center the title in the AppBar
+        //elevation: 1, // Add a subtle shadow to the AppBar
+      ),
       body: _pages[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.watch_rounded),
-            label: 'Healh Info',
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20.0),
+            topRight: Radius.circular(20.0),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.input),
-            label: 'Input',
+          boxShadow: [
+            BoxShadow(
+              color: lightGreyShadow,
+              spreadRadius: 2,
+              blurRadius: 5,
+              offset: const Offset(0, 3), // changes position of shadow
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20.0),
+            topRight: Radius.circular(20.0),
           ),
-        ],
+          child: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.watch_rounded),
+                label: 'Health Info',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(
+                  Icons.add_circle_rounded,
+                  size: 50,
+                ),
+                label: '',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.account_circle_sharp),
+                label: 'Profile',
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
