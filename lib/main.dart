@@ -137,7 +137,7 @@ class _MainScreenState extends State<MainScreen> {
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.watch_rounded),
-                label: 'Health Info',
+                label: 'Wearable',
               ),
               BottomNavigationBarItem(
                 icon: Icon(

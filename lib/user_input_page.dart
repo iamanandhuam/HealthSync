@@ -49,12 +49,20 @@ class _UserFoodInputPageState extends State<UserFoodInputPage> {
   }
 
   void _addFood() {
-    if (selectedFood != null) {
+    if (selectedFood != null && _quantityController.text.isNotEmpty) {
       final food = predefinedFoods.firstWhere(
-          (element) => element['name'] == selectedFood,
-          orElse: () => {});
+        (element) => element['name'] == selectedFood,
+        orElse: () => {},
+      );
+      int count = int.tryParse(_quantityController.text) ?? 1;
+      // Add a 'count' field to the food map.
+      final foodEntry = {
+        'name': food['name'],
+        'calories': food['calories'],
+        'count': count,
+      };
       setState(() {
-        consumedFoods.add(food);
+        consumedFoods.add(foodEntry);
       });
     }
   }
@@ -80,11 +88,11 @@ class _UserFoodInputPageState extends State<UserFoodInputPage> {
 
     // Build suggestions text.
     String suggestions = '''
-Total Calories Consumed: $totalCalories kcal
-Calories to Burn: ${caloriesToBurn.toStringAsFixed(0)} kcal
-Protein Requirement: ${proteinRequired.toStringAsFixed(0)} g/day
-Food Suggestions: $foodSuggestion
-    ''';
+      Total Calories Consumed: $totalCalories kcal
+      Calories to Burn: ${caloriesToBurn.toStringAsFixed(0)} kcal
+      Protein Requirement: ${proteinRequired.toStringAsFixed(0)} g/day
+      Food Suggestions: $foodSuggestion
+          ''';
 
     // Show suggestions in a dialog.
     showDialog(
@@ -110,24 +118,20 @@ Food Suggestions: $foodSuggestion
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Food Input'),
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              // Display user info loaded from DB.
+              const SizedBox(height: 16),
               if (userName != null)
                 Text(
-                  'Hello, $userName!\nWeight: ${weight?.toStringAsFixed(1)} kg, Height: ${height?.toStringAsFixed(1)} cm',
-                  style: const TextStyle(fontSize: 16),
-                  textAlign: TextAlign.center,
+                  "Hello, $userName \nLet's capture today.",
+                  style: const TextStyle(fontSize: 20),
+                  textAlign: TextAlign.left,
                 ),
               const SizedBox(height: 16),
-              // Dropdown for selecting a predefined food.
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
                   labelText: 'Select Food Consumed',
@@ -153,6 +157,24 @@ Food Suggestions: $foodSuggestion
                 },
               ),
               const SizedBox(height: 16),
+              TextFormField(
+                controller: _quantityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Quantity (count)',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter quantity';
+                  }
+                  if (int.tryParse(value) == null) {
+                    return 'Enter a valid number';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _addFood,
                 child: const Text('Add Food'),
@@ -166,6 +188,7 @@ Food Suggestions: $foodSuggestion
                     final food = consumedFoods[index];
                     return ListTile(
                       title: Text('${food['name']} (${food['calories']} kcal)'),
+                      subtitle: Text('Quantity: ${food['count']}'),
                       trailing: IconButton(
                         icon: const Icon(Icons.delete),
                         onPressed: () {

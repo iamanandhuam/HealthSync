@@ -60,17 +60,6 @@ class SmartWatchDashboardState extends State<SmartWatchDashboard> {
   Widget build(BuildContext context) {
     // Wrap everything in a ListView for scrolling.
     return Scaffold(
-      // appBar: AppBar(
-      //   title: const Text(
-      //     "HEALTH SYNC",
-      //     textAlign: TextAlign.center,
-      //     style: TextStyle(
-      //       fontWeight: FontWeight.w900,
-      //       color: Color.from(alpha: 1, red: 0.627, green: 0.404, blue: 0.918),
-      //       fontSize: 25,
-      //     ),
-      //   ),
-      // ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
