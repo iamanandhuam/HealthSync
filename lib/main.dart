@@ -84,7 +84,7 @@ class _MainScreenState extends State<MainScreen> {
 
   static const List<Widget> _pages = [
     HomePage(),
-    UserFoodInputPage(),
+    UserInputPage(),
     UserInfoPage(),
   ];
 

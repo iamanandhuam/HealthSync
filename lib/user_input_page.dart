@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
 import 'db_controller.dart';
+import 'gemini_service.dart';
 
-class UserFoodInputPage extends StatefulWidget {
-  const UserFoodInputPage({super.key});
+class UserInputPage extends StatefulWidget {
+  const UserInputPage({Key? key}) : super(key: key);
 
   @override
-  // ignore: library_private_types_in_public_api
-  _UserFoodInputPageState createState() => _UserFoodInputPageState();
+  State<UserInputPage> createState() => _UserInputPageState();
 }
 
-class _UserFoodInputPageState extends State<UserFoodInputPage> {
-  final _formKey = GlobalKey<FormState>();
+class _UserInputPageState extends State<UserInputPage> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _quantityController =
       TextEditingController(text: '1');
-
-  // Predefined list of foods with calories.
   final List<Map<String, dynamic>> predefinedFoods = [
     {'name': 'Oatmeal', 'calories': 150},
     {'name': 'Eggs', 'calories': 200},
@@ -22,13 +20,19 @@ class _UserFoodInputPageState extends State<UserFoodInputPage> {
     {'name': 'Banana', 'calories': 90},
     {'name': 'Yogurt', 'calories': 120},
   ];
+
   String? selectedFood;
   List<Map<String, dynamic>> consumedFoods = [];
 
   // Variables to hold user info from the DB.
   String? userName;
+  double? userAge;
   double? weight;
   double? height;
+
+  final GeminiService _geminiService = GeminiService();
+  //UserInfoPage? _userInfo;
+  String _response = "";
 
   @override
   void initState() {
@@ -37,11 +41,12 @@ class _UserFoodInputPageState extends State<UserFoodInputPage> {
   }
 
   Future<void> _loadUserInfo() async {
-    // Fetch user info from the local database.
-    final user = await DBHelper.instance.getUser();
+    final dbHelper = DBHelper.instance;
+    final user = await dbHelper.getUser();
     if (user != null) {
       setState(() {
         userName = user['name'];
+        userAge = user['age'];
         weight = user['weight'];
         height = user['height'];
       });
@@ -55,7 +60,6 @@ class _UserFoodInputPageState extends State<UserFoodInputPage> {
         orElse: () => {},
       );
       int count = int.tryParse(_quantityController.text) ?? 1;
-      // Add a 'count' field to the food map.
       final foodEntry = {
         'name': food['name'],
         'calories': food['calories'],
@@ -67,71 +71,85 @@ class _UserFoodInputPageState extends State<UserFoodInputPage> {
     }
   }
 
-  void _submit() {
-    if (consumedFoods.isEmpty) return;
+  Future<void> _submitAndGenerateAI() async {
+    if (consumedFoods.isEmpty ||
+        userAge == null ||
+        weight == null ||
+        height == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("Please complete your profile and add food items.")),
+      );
+      return;
+    }
 
-    // Calculate total calories from consumed foods.
-    int totalCalories =
-        consumedFoods.fold(0, (sum, food) => sum + (food['calories'] as int));
-
-    // Use the weight from DB to calculate suggestions.
-    // For example, a dummy BMR calculation: BMR = weight * 25.
-    double bmr = (weight ?? 70) * 25;
-    double caloriesToBurn = bmr - totalCalories;
-
-    // Calculate protein requirement: weight * 1.2 (dummy value)
-    double proteinRequired = (weight ?? 70) * 1.2;
-
-    // Create food suggestion based on a simple logic.
-    String foodSuggestion =
-        'Consider adding lean protein sources and fiber-rich foods.';
-
-    // Build suggestions text.
-    String suggestions = '''
-      Total Calories Consumed: $totalCalories kcal
-      Calories to Burn: ${caloriesToBurn.toStringAsFixed(0)} kcal
-      Protein Requirement: ${proteinRequired.toStringAsFixed(0)} g/day
-      Food Suggestions: $foodSuggestion
-          ''';
-
-    // Show suggestions in a dialog.
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Your Health Suggestions'),
-        content: Text(suggestions),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          )
-        ],
-      ),
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
-  }
 
-  @override
-  void dispose() {
-    super.dispose();
+    int totalCalories = consumedFoods.fold(
+        0,
+        (sum, food) =>
+            sum + (food['calories'] as int) * (food['count'] as int));
+    String foodDetails = consumedFoods
+        .map((food) =>
+            "${food['count']} x ${food['name']} (${food['calories']} kcal each)")
+        .join(', ');
+
+    final prompt =
+        '''The user has eaten: $foodDetails (total: $totalCalories calories).
+        The user is $userAge years old, weighs $weight kg, and is $height cm tall.
+        Provide suggestions on:
+        - How many more calories to burn
+        - Protein efficiency or deficiency
+        - Food recommendations
+        - Any other health advice
+        ''';
+
+    String userInput = prompt.toString();
+
+    String aiResponse = await _geminiService.getResponse(userInput);
+
+    Navigator.of(context).pop();
+
+    setState(() {
+      _response = aiResponse;
+    });
+
+    if (_response.startsWith("Error")) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("AI response failed: $_response")),
+      );
+    } else {
+      showDialog(
+        // ignore: use_build_context_synchronously
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Your Health Suggestions'),
+          content: Text(_response),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            )
+          ],
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('User Input')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              const SizedBox(height: 16),
-              if (userName != null)
-                Text(
-                  "Hello, $userName \nLet's capture today.",
-                  style: const TextStyle(fontSize: 20),
-                  textAlign: TextAlign.left,
-                ),
-              const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
                   labelText: 'Select Food Consumed',
@@ -180,7 +198,6 @@ class _UserFoodInputPageState extends State<UserFoodInputPage> {
                 child: const Text('Add Food'),
               ),
               const SizedBox(height: 16),
-              // Display the list of added foods.
               Expanded(
                 child: ListView.builder(
                   itemCount: consumedFoods.length,
@@ -202,8 +219,8 @@ class _UserFoodInputPageState extends State<UserFoodInputPage> {
                 ),
               ),
               ElevatedButton(
-                onPressed: _submit,
-                child: const Text('Submit and Get Suggestions'),
+                onPressed: _submitAndGenerateAI,
+                child: const Text('Submit and Get AI Suggestions'),
               ),
             ],
           ),
