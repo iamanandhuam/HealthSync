@@ -217,7 +217,7 @@ class SmartWatchDashboardState extends State<SmartWatchDashboard> {
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 32.0),
                 child: Text(
-                  'No health data available.\nConnect to server and request data.',
+                  'No health data available.\nConnect to your wearable device\nand request data.',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),

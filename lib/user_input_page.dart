@@ -29,6 +29,7 @@ class _UserInputPageState extends State<UserInputPage> {
   double? userAge;
   double? weight;
   double? height;
+  String? gender;
 
   final GeminiService _geminiService = GeminiService();
   //UserInfoPage? _userInfo;
@@ -49,6 +50,7 @@ class _UserInputPageState extends State<UserInputPage> {
         userAge = user['age'];
         weight = user['weight'];
         height = user['height'];
+        gender = user['gender'];
       });
     }
   }
@@ -100,7 +102,7 @@ class _UserInputPageState extends State<UserInputPage> {
 
     final prompt =
         '''The user has eaten: $foodDetails (total: $totalCalories calories).
-        The user is $userAge years old, weighs $weight kg, and is $height cm tall.
+        The user is $userAge years old, weighs $weight kg, and is $height cm tall.Gender: $gender.
         Provide suggestions on:
         - How many more calories to burn
         - Protein efficiency or deficiency

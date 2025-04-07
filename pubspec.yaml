@@ -42,7 +42,8 @@ dependencies:
   sqflite: ^2.0.0+4
   path: ^1.8.0
   google_generative_ai: ^0.2.2
-
+  shared_preferences: ^2.0.15
+  font_awesome_flutter: ^10.7.0
 
   
 dev_dependencies:

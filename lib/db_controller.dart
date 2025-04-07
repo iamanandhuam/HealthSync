@@ -25,7 +25,8 @@ class DBHelper {
         name TEXT NOT NULL,
         age REAL NOT NULL,
         weight REAL NOT NULL,
-        height REAL NOT NULL
+        height REAL NOT NULL,
+        gender TEXT
       )
     ''');
   }

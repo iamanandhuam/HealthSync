@@ -16,6 +16,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _heightController = TextEditingController();
   int? _userId;
+  String? gender;
 
   @override
   void initState() {
@@ -32,6 +33,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
         _ageController.text = user['age'].toString();
         _weightController.text = user['weight'].toString();
         _heightController.text = user['height'].toString();
+        gender = user['gender']; // Add this line
       });
     }
   }
@@ -40,6 +42,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
     if (_formKey.currentState!.validate()) {
       final user = {
         'name': _nameController.text,
+        'gender': gender,
         'age': double.parse(_ageController.text),
         'weight': double.parse(_weightController.text),
         'height': double.parse(_heightController.text),
@@ -63,6 +66,83 @@ class _UserInfoPageState extends State<UserInfoPage> {
     _weightController.dispose();
     _heightController.dispose();
     super.dispose();
+  }
+
+  Future<void> _showGenderPicker() async {
+    // Define the gender options.
+    final List<String> genders = [
+      "Male",
+      "Female",
+      "Other",
+      "Prefer not to say"
+    ];
+    // Determine the default index based on current gender, defaulting to 0.
+    int currentIndex = genders.indexOf(gender ?? "Male");
+    if (currentIndex < 0) currentIndex = 0;
+    final scrollController =
+        FixedExtentScrollController(initialItem: currentIndex);
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text(
+                'Select Gender',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: primaryPurple),
+              ),
+              content: SizedBox(
+                height: 200,
+                child: ListWheelScrollView.useDelegate(
+                  controller: scrollController,
+                  itemExtent: 40,
+                  onSelectedItemChanged: (index) {
+                    setStateDialog(() {
+                      currentIndex = index;
+                    });
+                  },
+                  childDelegate: ListWheelChildBuilderDelegate(
+                    builder: (context, index) {
+                      bool isSelected = index == currentIndex;
+                      return Center(
+                        child: Text(
+                          genders[index],
+                          style: TextStyle(
+                            fontSize: isSelected ? 24 : 16,
+                            color: isSelected ? primaryPurple : Colors.black,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
+                          ),
+                        ),
+                      );
+                    },
+                    childCount: genders.length,
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      gender = genders[currentIndex];
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: const Text(
+                    'OK',
+                    style: TextStyle(fontSize: 20),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    setState(() {});
   }
 
   Future<void> _showAgePicker() async {
@@ -290,6 +370,15 @@ class _UserInfoPageState extends State<UserInfoPage> {
                   }
                   return null;
                 },
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                title: const Text('Gender'),
+                subtitle: Text(gender == null ? 'Not set' : gender!),
+                trailing: IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: _showGenderPicker,
+                ),
               ),
               const SizedBox(height: 16),
               ListTile(

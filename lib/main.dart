@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:health_sync/settings.dart';
 import 'package:logger/logger.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'diaplay_data_from_sw.dart';
 import 'user_input_page.dart';
 import 'user_info_page.dart';
@@ -84,7 +86,9 @@ class _MainScreenState extends State<MainScreen> {
 
   static const List<Widget> _pages = [
     HomePage(),
+    SettingsPage(),
     UserInputPage(),
+    SettingsPage(),
     UserInfoPage(),
   ];
 
@@ -132,19 +136,29 @@ class _MainScreenState extends State<MainScreen> {
             topRight: Radius.circular(20.0),
           ),
           child: BottomNavigationBar(
+            backgroundColor: Colors.white,
             currentIndex: _selectedIndex,
             onTap: _onItemTapped,
+            selectedItemColor: primaryPurple,
+            unselectedItemColor: Colors.grey,
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.watch_rounded),
                 label: 'Wearable',
               ),
               BottomNavigationBarItem(
-                icon: Icon(
-                  Icons.add_circle_rounded,
-                  size: 50,
+                icon: FaIcon(
+                  FontAwesomeIcons.gear,
                 ),
-                label: '',
+                label: 'Settings',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.add_circle_rounded, size: 30),
+                label: 'Add',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.chat),
+                label: 'Chat with AI',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.account_circle_sharp),
