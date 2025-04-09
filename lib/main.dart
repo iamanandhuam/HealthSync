@@ -7,6 +7,7 @@ import 'display_data_from_sw.dart';
 import 'user_input_page.dart';
 import 'user_info_page.dart';
 import 'style.dart';
+import 'goal_dashboard.dart';
 
 var logger = Logger();
 
@@ -88,6 +89,7 @@ class _MainScreenState extends State<MainScreen> {
   static final List<Widget> _pages = [
     SmartWatchDashboard(),
     SettingsPage(),
+    GoalDashboardPage(),
     UserInputPage(),
     ChatWithAiPage(),
     UserInfoPage(),
@@ -152,6 +154,10 @@ class _MainScreenState extends State<MainScreen> {
                   FontAwesomeIcons.gear,
                 ),
                 label: 'Settings',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.track_changes),
+                label: 'Goals',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.add_circle_rounded, size: 30),

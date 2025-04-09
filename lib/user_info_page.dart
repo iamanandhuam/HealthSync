@@ -64,19 +64,13 @@ class _UserInfoPageState extends State<UserInfoPage> {
         'height': double.tryParse(heightText) ?? 0.0,
       };
 
-      // final user = {
-      //   'name': _nameController.text,
-      //   'gender': gender,
-      //   'age': double.parse(_ageController.text),
-      //   'weight': double.parse(_weightController.text),
-      //   'height': double.parse(_heightController.text),
-      // };
       if (_userId == null) {
         await DBHelper.instance.insertUser(user);
       } else {
         user['id'] = _userId as Object;
         await DBHelper.instance.updateUser(user);
       }
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('User info saved')),
       );
@@ -91,6 +85,120 @@ class _UserInfoPageState extends State<UserInfoPage> {
     _heightController.dispose();
     super.dispose();
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(" "),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              const SizedBox(height: 10),
+              const Center(
+                child: CircleAvatar(
+                  radius: 45,
+                  backgroundColor: primaryPurple,
+                  child: Icon(Icons.person, size: 45, color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                "Personal Information",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: primaryPurple,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  prefixIcon: const Icon(Icons.account_circle_outlined),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+                validator: (value) => value == null || value.isEmpty
+                    ? 'Please enter your name'
+                    : null,
+              ),
+              const SizedBox(height: 16),
+              _infoCard(
+                icon: Icons.person_outline,
+                label: 'Gender',
+                value: gender ?? 'Not set',
+                onTap: _showGenderPicker,
+              ),
+              _infoCard(
+                icon: Icons.cake_outlined,
+                label: 'Age',
+                value: _ageController.text.isEmpty
+                    ? 'Not set'
+                    : '${_ageController.text} years',
+                onTap: _showAgePicker,
+              ),
+              _infoCard(
+                icon: Icons.monitor_weight_outlined,
+                label: 'Weight',
+                value: _weightController.text.isEmpty
+                    ? 'Not set'
+                    : '${_weightController.text} kg',
+                onTap: _showWeightPicker,
+              ),
+              _infoCard(
+                icon: Icons.height_outlined,
+                label: 'Height',
+                value: _heightController.text.isEmpty
+                    ? 'Not set'
+                    : '${_heightController.text} cm',
+                onTap: _showHeightPicker,
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton.icon(
+                onPressed: _saveUser,
+                icon: const Icon(Icons.save),
+                label: const Text("Save Info"),
+                style: ElevatedButton.styleFrom(
+                  //backgroundColor: Colors.deepPurple,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  textStyle: const TextStyle(fontSize: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _infoCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.deepPurple),
+        title: Text(label),
+        subtitle: Text(value),
+        trailing: const Icon(Icons.edit, color: Colors.grey),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  // === Picker dialogs below ===
 
   Future<void> _showGenderPicker() async {
     final List<String> genders = [
@@ -110,11 +218,9 @@ class _UserInfoPageState extends State<UserInfoPage> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text(
-                'Select Gender',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: primaryPurple),
-              ),
+              title: const Text('Select Gender',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.deepPurple)),
               content: SizedBox(
                 height: 200,
                 child: ListWheelScrollView.useDelegate(
@@ -133,7 +239,8 @@ class _UserInfoPageState extends State<UserInfoPage> {
                           genders[index],
                           style: TextStyle(
                             fontSize: isSelected ? 24 : 16,
-                            color: isSelected ? primaryPurple : Colors.black,
+                            color:
+                                isSelected ? Colors.deepPurple : Colors.black,
                             fontWeight: isSelected
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -153,10 +260,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
                     });
                     Navigator.pop(context);
                   },
-                  child: const Text(
-                    'OK',
-                    style: TextStyle(fontSize: 20),
-                  ),
+                  child: const Text('OK', style: TextStyle(fontSize: 20)),
                 ),
               ],
             );
@@ -168,8 +272,8 @@ class _UserInfoPageState extends State<UserInfoPage> {
   }
 
   Future<void> _showAgePicker() async {
-    int selectedAge = int.tryParse(_ageController.text) ?? 25; // default age
-    int currentIndex = selectedAge - 15; // Range: 15 to 100
+    int selectedAge = int.tryParse(_ageController.text) ?? 25;
+    int currentIndex = selectedAge - 15;
     final scrollController =
         FixedExtentScrollController(initialItem: currentIndex);
 
@@ -179,11 +283,9 @@ class _UserInfoPageState extends State<UserInfoPage> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text(
-                'Select Age',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: primaryPurple),
-              ),
+              title: const Text('Select Age',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.deepPurple)),
               content: SizedBox(
                 height: 200,
                 child: ListWheelScrollView.useDelegate(
@@ -202,7 +304,8 @@ class _UserInfoPageState extends State<UserInfoPage> {
                           '${index + 15}',
                           style: TextStyle(
                             fontSize: isSelected ? 24 : 16,
-                            color: isSelected ? primaryPurple : Colors.black,
+                            color:
+                                isSelected ? Colors.deepPurple : Colors.black,
                             fontWeight: isSelected
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -220,10 +323,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
                     _ageController.text = (currentIndex + 15).toString();
                     Navigator.pop(context);
                   },
-                  child: const Text(
-                    'OK',
-                    style: TextStyle(fontSize: 20),
-                  ),
+                  child: const Text('OK', style: TextStyle(fontSize: 20)),
                 ),
               ],
             );
@@ -231,14 +331,12 @@ class _UserInfoPageState extends State<UserInfoPage> {
         );
       },
     );
-    // After dialog is closed, call parent's setState to rebuild the widget
     setState(() {});
   }
 
   Future<void> _showWeightPicker() async {
-    int selectedWeight =
-        int.tryParse(_weightController.text) ?? 70; // default weight
-    int currentIndex = selectedWeight - 20; // Range: 20 to 150
+    int selectedWeight = int.tryParse(_weightController.text) ?? 70;
+    int currentIndex = selectedWeight - 20;
     final scrollController =
         FixedExtentScrollController(initialItem: currentIndex);
 
@@ -248,11 +346,9 @@ class _UserInfoPageState extends State<UserInfoPage> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text(
-                'Select Weight (kg)',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: primaryPurple),
-              ),
+              title: const Text('Select Weight (kg)',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.deepPurple)),
               content: SizedBox(
                 height: 200,
                 child: ListWheelScrollView.useDelegate(
@@ -271,7 +367,8 @@ class _UserInfoPageState extends State<UserInfoPage> {
                           '${index + 20}',
                           style: TextStyle(
                             fontSize: isSelected ? 24 : 16,
-                            color: isSelected ? primaryPurple : Colors.black,
+                            color:
+                                isSelected ? Colors.deepPurple : Colors.black,
                             fontWeight: isSelected
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -279,7 +376,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
                         ),
                       );
                     },
-                    childCount: 131, // Weights 20 to 150
+                    childCount: 131,
                   ),
                 ),
               ),
@@ -289,10 +386,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
                     _weightController.text = (currentIndex + 20).toString();
                     Navigator.pop(context);
                   },
-                  child: const Text(
-                    'OK',
-                    style: TextStyle(fontSize: 20),
-                  ),
+                  child: const Text('OK', style: TextStyle(fontSize: 20)),
                 ),
               ],
             );
@@ -304,9 +398,8 @@ class _UserInfoPageState extends State<UserInfoPage> {
   }
 
   Future<void> _showHeightPicker() async {
-    int selectedHeight =
-        int.tryParse(_heightController.text) ?? 170; // default height
-    int currentIndex = selectedHeight - 70; // Range: 70 to 200
+    int selectedHeight = int.tryParse(_heightController.text) ?? 170;
+    int currentIndex = selectedHeight - 70;
     final scrollController =
         FixedExtentScrollController(initialItem: currentIndex);
 
@@ -316,11 +409,9 @@ class _UserInfoPageState extends State<UserInfoPage> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text(
-                'Select Height (cm)',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: primaryPurple),
-              ),
+              title: const Text('Select Height (cm)',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.deepPurple)),
               content: SizedBox(
                 height: 200,
                 child: ListWheelScrollView.useDelegate(
@@ -339,7 +430,8 @@ class _UserInfoPageState extends State<UserInfoPage> {
                           '${index + 70}',
                           style: TextStyle(
                             fontSize: isSelected ? 24 : 16,
-                            color: isSelected ? primaryPurple : Colors.black,
+                            color:
+                                isSelected ? Colors.deepPurple : Colors.black,
                             fontWeight: isSelected
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -347,7 +439,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
                         ),
                       );
                     },
-                    childCount: 131, // Heights 70 to 200
+                    childCount: 131,
                   ),
                 ),
               ),
@@ -357,10 +449,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
                     _heightController.text = (currentIndex + 70).toString();
                     Navigator.pop(context);
                   },
-                  child: const Text(
-                    'OK',
-                    style: TextStyle(fontSize: 20),
-                  ),
+                  child: const Text('OK', style: TextStyle(fontSize: 20)),
                 ),
               ],
             );
@@ -369,81 +458,5 @@ class _UserInfoPageState extends State<UserInfoPage> {
       },
     );
     setState(() {});
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('User Info'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your name';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                title: const Text('Gender'),
-                subtitle: Text(gender == null ? 'Not set' : gender!),
-                trailing: IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: _showGenderPicker,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                title: const Text('Age'),
-                subtitle: Text(_ageController.text.isEmpty
-                    ? 'Not set'
-                    : _ageController.text),
-                trailing: IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: _showAgePicker,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                title: const Text('Weight (kg)'),
-                subtitle: Text(_weightController.text.isEmpty
-                    ? 'Not set'
-                    : _weightController.text),
-                trailing: IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: _showWeightPicker,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                title: const Text('Height (cm)'),
-                subtitle: Text(_heightController.text.isEmpty
-                    ? 'Not set'
-                    : _heightController.text),
-                trailing: IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: _showHeightPicker,
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _saveUser,
-                child: const Text('Save'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
