@@ -33,20 +33,44 @@ class _UserInfoPageState extends State<UserInfoPage> {
         _ageController.text = user['age'].toString();
         _weightController.text = user['weight'].toString();
         _heightController.text = user['height'].toString();
-        gender = user['gender']; // Add this line
+        gender = user['gender'];
       });
     }
   }
 
   Future<void> _saveUser() async {
     if (_formKey.currentState!.validate()) {
+      final name = _nameController.text.trim();
+      final ageText = _ageController.text.trim();
+      final weightText = _weightController.text.trim();
+      final heightText = _heightController.text.trim();
+
+      if (name.isEmpty ||
+          ageText.isEmpty ||
+          weightText.isEmpty ||
+          heightText.isEmpty ||
+          gender == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Please fill in all fields")),
+        );
+        return;
+      }
+
       final user = {
-        'name': _nameController.text,
+        'name': name,
         'gender': gender,
-        'age': double.parse(_ageController.text),
-        'weight': double.parse(_weightController.text),
-        'height': double.parse(_heightController.text),
+        'age': double.tryParse(ageText) ?? 0.0,
+        'weight': double.tryParse(weightText) ?? 0.0,
+        'height': double.tryParse(heightText) ?? 0.0,
       };
+
+      // final user = {
+      //   'name': _nameController.text,
+      //   'gender': gender,
+      //   'age': double.parse(_ageController.text),
+      //   'weight': double.parse(_weightController.text),
+      //   'height': double.parse(_heightController.text),
+      // };
       if (_userId == null) {
         await DBHelper.instance.insertUser(user);
       } else {
@@ -69,14 +93,12 @@ class _UserInfoPageState extends State<UserInfoPage> {
   }
 
   Future<void> _showGenderPicker() async {
-    // Define the gender options.
     final List<String> genders = [
       "Male",
       "Female",
       "Other",
       "Prefer not to say"
     ];
-    // Determine the default index based on current gender, defaulting to 0.
     int currentIndex = genders.indexOf(gender ?? "Male");
     if (currentIndex < 0) currentIndex = 0;
     final scrollController =
@@ -188,7 +210,7 @@ class _UserInfoPageState extends State<UserInfoPage> {
                         ),
                       );
                     },
-                    childCount: 86, // Ages 15 to 100
+                    childCount: 86,
                   ),
                 ),
               ),

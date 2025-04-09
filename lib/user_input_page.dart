@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'db_controller.dart';
 import 'gemini_service.dart';
+import 'food_data_loader.dart';
+import 'meal_history_page.dart';
 
 class UserInputPage extends StatefulWidget {
   const UserInputPage({Key? key}) : super(key: key);
@@ -11,17 +14,7 @@ class UserInputPage extends StatefulWidget {
 
 class _UserInputPageState extends State<UserInputPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _quantityController =
-      TextEditingController(text: '1');
-  final List<Map<String, dynamic>> predefinedFoods = [
-    {'name': 'Oatmeal', 'calories': 150},
-    {'name': 'Eggs', 'calories': 200},
-    {'name': 'Toast', 'calories': 100},
-    {'name': 'Banana', 'calories': 90},
-    {'name': 'Yogurt', 'calories': 120},
-  ];
-
-  String? selectedFood;
+  Map<String, List<Map<String, dynamic>>> foodData = {};
   List<Map<String, dynamic>> consumedFoods = [];
 
   // Variables to hold user info from the DB.
@@ -32,13 +25,18 @@ class _UserInputPageState extends State<UserInputPage> {
   String? gender;
 
   final GeminiService _geminiService = GeminiService();
-  //UserInfoPage? _userInfo;
   String _response = "";
 
   @override
   void initState() {
     super.initState();
     _loadUserInfo();
+    loadFoodDataFromExcel().then((data) {
+      setState(() {
+        foodData = data;
+      });
+      print("Loaded categories: ${foodData.keys}");
+    });
   }
 
   Future<void> _loadUserInfo() async {
@@ -55,178 +53,252 @@ class _UserInputPageState extends State<UserInputPage> {
     }
   }
 
-  void _addFood() {
-    if (selectedFood != null && _quantityController.text.isNotEmpty) {
-      final food = predefinedFoods.firstWhere(
-        (element) => element['name'] == selectedFood,
-        orElse: () => {},
-      );
-      int count = int.tryParse(_quantityController.text) ?? 1;
-      final foodEntry = {
-        'name': food['name'],
-        'calories': food['calories'],
-        'count': count,
-      };
-      setState(() {
-        consumedFoods.add(foodEntry);
-      });
-    }
+  Widget _buildCategoryGrid() {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      itemCount: foodData.keys.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: 3,
+      ),
+      itemBuilder: (context, index) {
+        String category = foodData.keys.elementAt(index);
+        return ElevatedButton(
+          onPressed: () => _showFoodPopup(category),
+          child: Text(category, style: const TextStyle(fontSize: 16)),
+        );
+      },
+    );
   }
 
-  Future<void> _submitAndGenerateAI() async {
-    if (consumedFoods.isEmpty ||
-        userAge == null ||
-        weight == null ||
-        height == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("Please complete your profile and add food items.")),
-      );
-      return;
-    }
+  void _showFoodPopup(String category) {
+    showDialog(
+      context: context,
+      builder: (_) {
+        final foods = foodData[category]!;
+        return AlertDialog(
+          title: Text("Select Food - $category"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: foods.length,
+              itemBuilder: (context, index) {
+                final food = foods[index];
+                return ListTile(
+                  title: Text("${food['name']} (${food['unit']})"),
+                  subtitle: Text("Calories: ${food['calories']}"),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showQuantityDialog(category, food);
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showQuantityDialog(String category, Map<String, dynamic> food) {
+    final TextEditingController quantityController =
+        TextEditingController(text: '1');
 
     showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
+      builder: (_) => AlertDialog(
+        title: Text("How many ${food['unit']} of ${food['name']}?"),
+        content: TextField(
+          controller: quantityController,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Quantity',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              final count = int.tryParse(quantityController.text) ?? 1;
+              Navigator.pop(context);
+              _addFoodSelection(category, food, count);
+            },
+            child: const Text("Add"),
+          ),
+        ],
+      ),
     );
+  }
 
-    int totalCalories = consumedFoods.fold(
-        0,
-        (sum, food) =>
-            sum + (food['calories'] as int) * (food['count'] as int));
-    String foodDetails = consumedFoods
-        .map((food) =>
-            "${food['count']} x ${food['name']} (${food['calories']} kcal each)")
-        .join(', ');
-
-    final prompt =
-        '''The user has eaten: $foodDetails (total: $totalCalories calories).
-        The user is $userAge years old, weighs $weight kg, and is $height cm tall.Gender: $gender.
-        Provide suggestions on:
-        - How many more calories to burn
-        - Protein efficiency or deficiency
-        - Food recommendations
-        - Any other health advice
-        ''';
-
-    String userInput = prompt.toString();
-
-    String aiResponse = await _geminiService.getResponse(userInput);
-
-    Navigator.of(context).pop();
+  void _addFoodSelection(
+      String category, Map<String, dynamic> food, int count) {
+    final now = DateFormat('yyyy-MM-dd HH:mm:ss').format(DateTime.now());
+    final selected = {
+      'category': category,
+      'name': food['name'],
+      'calories': food['calories'],
+      'unit': food['unit'],
+      'protein': food['protein'],
+      'fat': food['fat'],
+      'count': count,
+      'added_at': now,
+    };
 
     setState(() {
-      _response = aiResponse;
+      consumedFoods.add(selected);
     });
+  }
 
-    if (_response.startsWith("Error")) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("AI response failed: $_response")),
-      );
-    } else {
-      showDialog(
-        // ignore: use_build_context_synchronously
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('Your Health Suggestions'),
-          content: Text(_response),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            )
-          ],
-        ),
-      );
+  Widget _buildFloatingSummary() {
+    int totalCalories = 0;
+    double totalProtein = 0;
+    double totalFat = 0;
+
+    for (var food in consumedFoods) {
+      int count = food['count'] ?? 1;
+      totalCalories += (food['calories'] as num).toInt() * count;
+      totalProtein += (food['protein'] as num).toDouble() * count;
+      totalFat += (food['fat'] as num).toDouble() * count;
     }
+
+    return Positioned(
+      bottom: 20,
+      left: 20,
+      right: 20,
+      child: Card(
+        color: Colors.deepPurple.withOpacity(0.9),
+        elevation: 6,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Calories: $totalCalories kcal",
+                  style: TextStyle(color: Colors.white)),
+              Text("Protein: ${totalProtein.toStringAsFixed(1)} g",
+                  style: TextStyle(color: Colors.white)),
+              Text("Fat: ${totalFat.toStringAsFixed(1)} g",
+                  style: TextStyle(color: Colors.white)),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('User Input')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Select Food Consumed',
-                  border: OutlineInputBorder(),
-                ),
-                value: selectedFood,
-                items: predefinedFoods.map((food) {
-                  return DropdownMenuItem<String>(
-                    value: food['name'],
-                    child: Text('${food['name']} (${food['calories']} kcal)'),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  setState(() {
-                    selectedFood = val;
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select a food';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _quantityController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Quantity (count)',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter quantity';
-                  }
-                  if (int.tryParse(value) == null) {
-                    return 'Enter a valid number';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _addFood,
-                child: const Text('Add Food'),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: consumedFoods.length,
-                  itemBuilder: (context, index) {
-                    final food = consumedFoods[index];
-                    return ListTile(
-                      title: Text('${food['name']} (${food['calories']} kcal)'),
-                      subtitle: Text('Quantity: ${food['count']}'),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () {
-                          setState(() {
-                            consumedFoods.removeAt(index);
-                          });
-                        },
-                      ),
-                    );
-                  },
-                ),
-              ),
-              ElevatedButton(
-                onPressed: _submitAndGenerateAI,
-                child: const Text('Submit and Get AI Suggestions'),
-              ),
-            ],
+      appBar: AppBar(
+        title: Text(
+          "Hello ${userName ?? ""}!\nSelect Your Meals",
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: Colors.deepPurple,
+            letterSpacing: 1,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MealHistoryPage()),
+              );
+            },
+          )
+        ],
+      ),
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Select Food Category:"),
+                  const SizedBox(height: 10),
+                  _buildCategoryGrid(),
+                  const SizedBox(height: 16),
+                  if (consumedFoods.isNotEmpty) _buildFloatingSummary(),
+                  const SizedBox(height: 24),
+                  const Text(
+                      "Selected Foods Today:"), // space for floating summary
+                  ...consumedFoods.map((food) => ListTile(
+                        title: Text('${food['name']} (${food['unit']})'),
+                        subtitle: Text(
+                            'Category: ${food['category']} | Calories: ${food['calories']} | Quantity: ${food['count']}'),
+                        trailing: Text('🕒 ${food['added_at']}'),
+                      )),
+                  const SizedBox(height: 100),
+                  // Center(
+                  //   child: ElevatedButton(
+                  //     onPressed: () {},
+                  //     child: const Text('Submit and Get AI Suggestions'),
+                  //   ),
+                  // ),
+                  Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: consumedFoods.isEmpty
+                              ? null
+                              : () {
+                                  setState(() {
+                                    consumedFoods.clear();
+                                  });
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text("Selection cleared")),
+                                  );
+                                },
+                          icon: const Icon(Icons.clear),
+                          label: const Text("Clear Selection"),
+                        ),
+                        ElevatedButton.icon(
+                          onPressed: consumedFoods.isEmpty
+                              ? null
+                              : () async {
+                                  final dbHelper = DBHelper.instance;
+                                  for (var food in consumedFoods) {
+                                    await dbHelper.insertConsumedFood(food);
+                                  }
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                            Text("Meals saved successfully!")),
+                                  );
+
+                                  setState(() {
+                                    consumedFoods.clear();
+                                  });
+                                },
+                          icon: const Icon(Icons.save),
+                          label: const Text("Save Meals"),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          //if (consumedFoods.isNotEmpty) _buildFloatingSummary(),
+        ],
       ),
     );
   }

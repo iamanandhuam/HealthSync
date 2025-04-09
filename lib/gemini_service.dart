@@ -7,26 +7,32 @@ class GeminiService {
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=$apiKey";
 
   Future<String> getResponse(String prompt) async {
-    final response = await http.post(
-      Uri.parse(endpoint),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "contents": [
-          {
-            "parts": [
-              {"text": prompt},
-            ],
-          },
-        ],
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse(endpoint),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "contents": [
+            {
+              "parts": [
+                {"text": prompt},
+              ],
+            },
+          ],
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data["candidates"][0]["content"]["parts"][0]["text"] ??
-          "No response";
-    } else {
-      return "Error: ${response.statusCode} - ${response.body}";
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data["candidates"][0]["content"]["parts"][0]["text"] ??
+            "No response";
+      } else {
+        //return "Error: ${response.statusCode} - ${response.body}";
+        return "ERROR ! Unable to reach server.";
+      }
+    } catch (e) {
+      //return "Error: $e";
+      return "ERROR ! Unable to reach server.";
     }
   }
 }

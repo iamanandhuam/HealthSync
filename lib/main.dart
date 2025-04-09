@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:health_sync/chat_with.dart';
 import 'package:health_sync/settings.dart';
 import 'package:logger/logger.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'diaplay_data_from_sw.dart';
+import 'display_data_from_sw.dart';
 import 'user_input_page.dart';
 import 'user_info_page.dart';
 import 'style.dart';
@@ -84,11 +85,11 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  static const List<Widget> _pages = [
-    HomePage(),
+  static final List<Widget> _pages = [
+    SmartWatchDashboard(),
     SettingsPage(),
     UserInputPage(),
-    SettingsPage(),
+    ChatWithAiPage(),
     UserInfoPage(),
   ];
 

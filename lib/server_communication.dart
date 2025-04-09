@@ -1,84 +1,55 @@
-import 'package:socket_io_client/socket_io_client.dart' as socket_io;
-import 'package:logger/logger.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'db_controller.dart';
+import 'package:logger/logger.dart';
 
-var logger = Logger();
+final logger = Logger();
 
 class ServerCommunication {
-  socket_io.Socket? socket;
-  bool isConnected = false;
-  String ipAddress = "http://127.0.0.1:5000";
+  static final ServerCommunication _instance = ServerCommunication._internal();
+  factory ServerCommunication() => _instance;
 
-  ServerCommunication() {
-    _loadIP().then((_) {
-      _connectToServer();
-    });
-  }
+  ServerCommunication._internal();
 
-  Future<void> _loadIP() async {
+  String ipAddress = "127.0.0.1"; // Default
+
+  Future<void> init() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? ip = prefs.getString('simulator_ip');
-    if (ip?.isNotEmpty ?? false) {
-      ipAddress = ip!;
+    if (ip != null && ip.isNotEmpty) {
+      ipAddress = ip;
     }
   }
 
-  void _connectToServer() {
-    logger.i(
-        ' ------------------------------ Connecting to socket at $ipAddress ...');
-    socket = socket_io.io(ipAddress, <String, dynamic>{
-      'transports': ['websocket'],
-      'autoConnect': true,
-    });
+  Future<Map<String, dynamic>?> fetchHealthData() async {
+    final url = Uri.parse('http://$ipAddress:5000/get_health_data');
 
-    socket!.onConnect((_) {
-      logger.i('Connected to server');
-      isConnected = true;
-    });
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
 
-    socket!.onDisconnect((_) {
-      logger.i('Disconnected from server');
-      isConnected = false;
-    });
+        final now = DateTime.now().toIso8601String();
+        final dbHelper = DBHelper.instance;
+        await dbHelper.insertHealthData({
+          'heart_rate': data['heart_rate'],
+          'steps': data['total_steps'] ?? data['steps'],
+          'systolic': data['blood_pressure']?['systolic'],
+          'diastolic': data['blood_pressure']?['diastolic'],
+          'temperature': data['temperature'],
+          'respiratory_rate': data['respiratory_rate'],
+          'oxygen_saturation': data['oxygen_saturation'],
+          'recorded_at': now,
+        });
 
-    socket!.on('connection_status', (data) {
-      logger.i('Connection status: $data');
-    });
-
-    socket!.connect();
-  }
-
-  void toggleDataGeneration(bool isGeneratingData) {
-    if (socket == null) return;
-
-    if (isGeneratingData) {
-      socket!.emit('stop_data_generation');
-    } else {
-      socket!.emit('start_data_generation');
+        return data;
+      } else {
+        print("Error fetching data: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("HTTP error: $e");
     }
-  }
-
-  void getSingleReading(Function callback) {
-    if (socket == null) return;
-
-    socket!.emitWithAck('get_single_reading', {}, ack: (data) {
-      callback(data);
-    });
-  }
-
-  void onHealthData(void Function(dynamic) callback) {
-    if (socket == null) return;
-
-    socket!.on('health_data', (data) {
-      logger.i('Received health data: $data');
-      callback(data);
-    });
-  }
-
-  void disconnect() {
-    if (socket == null) return;
-
-    socket!.disconnect();
-    socket!.dispose();
+    return null;
   }
 }
