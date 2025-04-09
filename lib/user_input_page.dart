@@ -198,28 +198,6 @@ class _UserInputPageState extends State<UserInputPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Hello ${userName ?? ""}!\nSelect Your Meals",
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Colors.deepPurple,
-            letterSpacing: 1,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MealHistoryPage()),
-              );
-            },
-          )
-        ],
-      ),
       body: Stack(
         children: [
           Padding(
@@ -228,6 +206,37 @@ class _UserInputPageState extends State<UserInputPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 👋 Greeting and History Button Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "Hello ${userName ?? ""}!\nSelect Your Meals",
+                          style: const TextStyle(
+                            fontSize: 25,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.deepPurple,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.calendar_month,
+                            color: Colors.deepPurple),
+                        tooltip: "View Meal History",
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MealHistoryPage(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   const Text("Select Food Category:"),
                   const SizedBox(height: 10),
                   _buildCategoryGrid(),

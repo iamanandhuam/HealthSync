@@ -18,6 +18,7 @@ class _SmartWatchDashboardState extends State<SmartWatchDashboard> {
 
   bool isGeneratingData = false;
   Map<String, dynamic> healthData = {};
+  bool firstLoadDone = false;
 
   _SmartWatchDashboardState() {
     logger.i('SmartWatchDashboardState CONSTRUCTOR');

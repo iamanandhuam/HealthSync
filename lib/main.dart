@@ -15,6 +15,8 @@ void main() {
   runApp(const MyApp());
 }
 
+bool hasFetchedHealthDataOnce = false;
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 

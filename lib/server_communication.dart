@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'db_controller.dart';
 import 'package:logger/logger.dart';
+import 'main.dart';
 
 final logger = Logger();
 
@@ -30,18 +31,20 @@ class ServerCommunication {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
-        final now = DateTime.now().toIso8601String();
-        final dbHelper = DBHelper.instance;
-        await dbHelper.insertHealthData({
-          'heart_rate': data['heart_rate'],
-          'steps': data['total_steps'] ?? data['steps'],
-          'systolic': data['blood_pressure']?['systolic'],
-          'diastolic': data['blood_pressure']?['diastolic'],
-          'temperature': data['temperature'],
-          'respiratory_rate': data['respiratory_rate'],
-          'oxygen_saturation': data['oxygen_saturation'],
-          'recorded_at': now,
-        });
+        if (!hasFetchedHealthDataOnce) {
+          final now = DateTime.now().toIso8601String();
+          final dbHelper = DBHelper.instance;
+          await dbHelper.insertHealthData({
+            'heart_rate': data['heart_rate'],
+            'steps': data['total_steps'] ?? data['steps'],
+            'systolic': data['blood_pressure']?['systolic'],
+            'diastolic': data['blood_pressure']?['d iastolic'],
+            'temperature': data['temperature'],
+            'respiratory_rate': data['respiratory_rate'],
+            'oxygen_saturation': data['oxygen_saturation'],
+            'recorded_at': now,
+          });
+        }
 
         return data;
       } else {
